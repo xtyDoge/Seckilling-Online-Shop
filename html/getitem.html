@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>商品详情</title>
+    <!-- 引入jQuery-->
+    <script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js" type="application/javascript"></script>
+    <link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="static/assets/global/css/components.css" rel="stylesheet" type="text/css" />
+    <link href="static/assets/admin/pages/css/login.css" rel="stylesheet" type="text/css" />
+
+
+</head>
+<body class="login">
+<div class="content">
+    <h3 class="form-title">商品详情</h3>
+    <div class="form-group">
+        <div id="promoStartTimeContainer">
+            <label class="control-label" style="color: blue;" id="promoStatus">秒杀开始时间</label>
+            <div>
+                <label class="control-label" id="promoStartTime" style="color: red;white-space: pre;"></label>
+            </div>
+        </div>
+        <label class="control-label">商品名称</label>
+        <div>
+            <label class="control-label" id="title"></label>
+        </div>
+        <div>
+            <img id="imgUrl" alt="商品图片" style="width: 200px; height: auto;">
+        </div>
+        <label class="control-label">商品描述</label>
+        <div>
+            <label class="control-label" id="description"></label>
+        </div>
+        <label id="normalPriceContainer" class="control-label">商品价格</label>
+        <div>
+            <label class="control-label" id="price"></label>
+        </div>
+        <div id="promoPriceContainer">
+            <label class="control-label" style="color: red;">秒杀价格</label>
+            <div>
+                <label class="control-label" id="promoPrice" style="color: red;"></label>
+            </div>
+        </div>
+        <label class="control-label">商品库存</label>
+        <div>
+            <label class="control-label" id="stock"></label>
+        </div>
+        <label class="control-label">商品销量</label>
+        <div>
+            <label class="control-label" id="sales"></label>
+        </div>
+        <div class="form-actions">
+            <button class="btn red-pink" id="createorder" type="submit">购买</button>
+        </div>
+    </div>
+
+</div>
+
+</body>
+<script>
+
+    function getParam(paramName) {
+        paramValue = "", isFound = !1;
+        if (this.location.search.indexOf("?") == 0 && this.location.search.indexOf("=") > 1) {
+            arrSource = unescape(this.location.search).substring(1, this.location.search.length).split("&"), i = 0;
+            while (i < arrSource.length && !isFound) arrSource[i].indexOf("=") > 0 && arrSource[i].split("=")[0].toLowerCase() == paramName.toLowerCase() && (paramValue = arrSource[i].split("=")[1], isFound = !0), i++
+        }
+        return paramValue == "" && (paramValue = null), paramValue
+    };
+
+    var g_itemVO = {};
+
+    jQuery(document).ready(function () {
+
+        $("#createorder").on("click",function () {
+            $.ajax({
+                type:"POST",
+                url:"http://localhost:8090/order/createorder",
+                data:{
+                    "itemId":g_itemVO.id,
+                    "amount":1,
+                    "promoId":g_itemVO.promoId,
+                },
+                contentType:"application/x-www-form-urlencoded",
+                xhrFields:{withCredentials:true},
+                success:function (data) {
+                    if(data.status=="success"){
+                        alert("下单成功")
+                        window.location.reload();
+                    }
+                    else{
+                        alert("下单失败，原因为"+data.data.errorMsg);
+                        window.location.href = "login.html"
+                    }
+                },
+                error:function (data) {
+                    alert("创建信息封装失败，原因为"+data.responseText);
+                }
+            });
+            return false;
+        });
+
+            $.ajax({
+                type:"GET",
+                url:"http://localhost:8090/item/get",
+                data:{
+                    "id":getParam("id"),
+                },
+                xhrFields:{withCredentials:true},
+                success:function (data) {
+                    if(data.status=="success"){
+                        g_itemVO = data.data;
+                        reloadDOM();
+                        setInterval(reloadDOM,500);
+                    }
+                    else{
+                        alert("获取信息失败，原因为"+data.data.errorMsg);
+                    }
+                },
+                error:function (data) {
+                    alert("创建信息封装失败，原因为"+data.responseText);
+                }
+            });
+            return false;
+        });
+
+    function reloadDOM() {
+
+        $("#title").text(g_itemVO.title);
+        $("#description").text(g_itemVO.description);
+        $("#stock").text(g_itemVO.stock);
+        $("#price").text(g_itemVO.price);
+        $("#imgUrl").attr("src",g_itemVO.imgUrl);
+        $("#sales").text(g_itemVO.sales);
+        // 秒杀活动未开始
+        if(g_itemVO.promoStatus == 1){
+            var startTime = g_itemVO.startDateTime.replace(new RegExp("-","gm"),"/");
+            startTime = (new Date(startTime)).getTime();
+            var nowTime = Date.parse(new Date());
+            var delta = (startTime - nowTime)/1000;
+            if(delta <= 0){
+                // 活动开始，翻转对应状态
+                g_itemVO.promoStatus = 2;
+                reloadDOM();
+            }
+
+            $("#promoStartTime").text("秒杀活动将于" + g_itemVO.startDateTime +"开始\n倒计时："+ delta + "秒");
+            $("#promoPrice").text(g_itemVO.promoPrice);
+            $("#createorder").attr("disabled",true);
+        }
+        // 进行中
+        else if(g_itemVO.promoStatus == 2){
+            $("#createorder").attr("disabled",false);
+            $("#promoStartTime").text("秒杀活动进行中");
+            $("#promoPrice").text(g_itemVO.promoPrice);
+            $("#normalPriceContainer").hide();
+        }
+        // 不存在or已结束？
+
+    };
+</script>
+</html>
