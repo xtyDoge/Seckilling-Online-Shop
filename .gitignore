@@ -28,6 +28,7 @@ target/
 
 .idea/
 
-.iml
+*.iml
+
 
 
