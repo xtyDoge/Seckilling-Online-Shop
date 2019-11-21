@@ -50,6 +50,13 @@
             <input class="form-control" type="text" placeholder="年龄" name="age" id="age">
         </div>
     </div>
+    <div class="form-group">
+        <label class="control-label">EMAIL</label>
+        <div>
+            <input class="form-control" type="text" placeholder="EMAIL" name="email" id="email">
+        </div>
+    </div>
+
 
     <div class="form-actions">
         <button class="btn red-pink" id="regist" type="submit">注册</button>
@@ -67,6 +74,7 @@
             var gender   = $("#gender").val();
             var age      = $("#age").val();
             var otpCode  = $("#otpCode").val();
+            var email    = $("email").val();
 
             if(telphone == null || telphone == ""){
                 alert("手机号不能为空");
@@ -98,6 +106,7 @@
                 return false;
             }
 
+
             $.ajax({
                 type:"POST",
                 contentType:"application/x-www-form-urlencoded",
@@ -110,6 +119,7 @@
                     "otpCode":otpCode,
                     "age":age,
                     "gender":gender,
+                    "email":email,
                 },
                 success:function (data) {
                     if(data.status=="success"){

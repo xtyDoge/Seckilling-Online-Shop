@@ -35,7 +35,8 @@ public class PromoServiceImpl implements PromoService {
         PromoDO promoDO = promoDOMapper.selectByItemId(itemId);
         PromoModel promoModel = convertPromoModelFromDO(promoDO);
         if(promoModel == null){
-            throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR,"秒杀活动不存在");
+            return null;
+//            throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR,"秒杀活动不存在");
         }
         // 活动状态，1表示未开始，2表示进行中，3表示已结束
         if(promoModel.getStartDate().isAfterNow()){

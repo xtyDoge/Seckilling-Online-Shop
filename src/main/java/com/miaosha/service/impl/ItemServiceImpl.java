@@ -1,5 +1,7 @@
 package com.miaosha.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.miaosha.dao.ItemDOMapper;
 import com.miaosha.dao.ItemStockDOMapper;
 import com.miaosha.dataobject.ItemDO;
@@ -14,9 +16,11 @@ import com.miaosha.validator.ValidationResult;
 import com.miaosha.validator.ValidatorImpl;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,6 +39,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     private PromoService promoService;
+
+    @Resource
+    private RedisTemplate<String,Object> redisTemplate;
 
     @Override
     @Transactional
@@ -59,6 +66,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemModel> listItem() {
+
         //根据活动号列出？
         List<ItemDO> itemDOList = itemDOMapper.listItem();
         List<ItemModel> itemModelList = itemDOList.stream().map(itemDO -> {
@@ -67,6 +75,22 @@ public class ItemServiceImpl implements ItemService {
            return itemModel;
         }).collect(Collectors.toList());
         return itemModelList;
+    }
+
+    @Override
+    public List<ItemModel> listItemByProperty(Integer pageNum, Integer pageSize, String property) {
+        // PageHelper拦截
+        PageHelper.startPage(pageNum,pageSize);
+        List<ItemDO> itemDOList = itemDOMapper.list(property);
+        PageInfo<ItemDO> pageInfo = new PageInfo<ItemDO>(itemDOList);
+        // 转换成List
+        List<ItemDO> itemCut = pageInfo.getList();
+        List<ItemModel> itemModels = itemCut.stream().map(itemDO -> {
+            ItemStockDO itemStockDO = itemStockDOMapper.selectByItemId(itemDO.getId());
+            ItemModel itemModel = convertItemModelFromItemDOAndItemStockDO(itemDO,itemStockDO);
+            return itemModel;
+        }).collect(Collectors.toList());
+        return itemModels;
     }
 
     @Override

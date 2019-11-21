@@ -16,13 +16,17 @@ import com.miaosha.service.model.PromoModel;
 import com.miaosha.service.model.UserModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Stack;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -41,6 +45,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private PromoService promoService;
+
+    // TODO 给订单查询加入redis缓存加持
+    @Resource
+    private RedisTemplate<String,Object> redisTemplate;
+
+    @Override
+    public List<OrderModel> listOrder(Integer userId, Integer beginTime, Integer endTime) {
+        // 订单查询 TODO
+        return null;
+    }
 
     @Override
     @Transactional
@@ -70,7 +84,6 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-
         // 2 落单减库存（落单锁？） 支付减库存？
         boolean result =  itemService.decreaseStock(itemId,amount);
         if(!result){
@@ -79,7 +92,6 @@ public class OrderServiceImpl implements OrderService {
         itemService.increaseSales(itemId,amount);
 
         // 3 订单入库-生成DO
-
         OrderModel orderModel = new OrderModel();
         // 生成订单号
         orderModel.setId(generateOrderNO());

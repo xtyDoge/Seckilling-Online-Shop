@@ -1,6 +1,7 @@
 package com.miaosha.service;
 
 import com.miaosha.error.BusinessException;
+import com.miaosha.service.model.EmailModel;
 import com.miaosha.service.model.UserModel;
 
 public interface UserService {
@@ -10,4 +11,7 @@ public interface UserService {
     void register(UserModel userModel) throws BusinessException;
 
     UserModel validateLogin(String telphone,String encrptPassword) throws BusinessException;
+
+    void sendEmail(EmailModel emailModel) throws InterruptedException;
+
 }

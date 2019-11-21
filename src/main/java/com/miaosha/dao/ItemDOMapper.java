@@ -1,5 +1,6 @@
 package com.miaosha.dao;
 
+import com.github.pagehelper.PageInfo;
 import com.miaosha.dataobject.ItemDO;
 import org.apache.ibatis.annotations.Param;
 
@@ -55,6 +56,8 @@ public interface ItemDOMapper {
     int updateByPrimaryKey(ItemDO record);
 
     List<ItemDO> listItem();
+
+    List<ItemDO> list(@Param("property") String property);
 
     int increaseSales(@Param("id") Integer id, @Param("amount") Integer amount);
 

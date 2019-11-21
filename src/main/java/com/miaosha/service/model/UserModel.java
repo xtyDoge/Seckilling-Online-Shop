@@ -27,6 +27,8 @@ public class UserModel {
 
     private String thirdPartyId;
 
+    private String email;
+
     @NotBlank(message = "密码不能为空")
     private String encrptPassword;
 
@@ -92,5 +94,13 @@ public class UserModel {
 
     public void setEncrptPassword(String encrptPassword) {
         this.encrptPassword = encrptPassword;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

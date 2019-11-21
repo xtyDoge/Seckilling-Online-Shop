@@ -12,6 +12,9 @@ public interface ItemService {
     // 列表浏览
     List<ItemModel> listItem();
 
+    // 按顺序分页列表浏览
+    List<ItemModel> listItemByProperty(Integer pageNum, Integer pageSize, String Property);
+
     // 详情浏览
     ItemModel getItemById(Integer id) throws BusinessException;
 

@@ -7,24 +7,24 @@ import com.miaosha.error.EmBusinessError;
 import com.miaosha.response.CommonReturnType;
 import com.miaosha.service.UserService;
 import com.miaosha.service.model.UserModel;
-import org.apache.catalina.User;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tomcat.util.security.MD5Encoder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static com.miaosha.error.EmBusinessError.USER_LOGIN_FAIL;
 import static com.miaosha.error.EmBusinessError.USER_NOT_EXIST;
@@ -35,8 +35,18 @@ import static com.miaosha.error.EmBusinessError.USER_NOT_EXIST;
 public class UserController extends BaseController{
 
 
+    @Resource
+    private RedisTemplate redisTemplate;
+
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private HttpServletRequest httpServletRequest;
+
+    @Autowired
+    private HttpServletResponse httpServletResponse;
+
 
     @RequestMapping("/get")
     @ResponseBody
@@ -53,8 +63,7 @@ public class UserController extends BaseController{
         return CommonReturnType.create(convertUserVOfromUserModel(userModel));
     }
 
-    @Autowired
-    private HttpServletRequest httpServletRequest;
+
     // 获取手机验证码
     @RequestMapping(value = "/getotp",method = {RequestMethod.POST},consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
@@ -82,7 +91,8 @@ public class UserController extends BaseController{
             @RequestParam(name="name") String name,
             @RequestParam(name="gender") Byte gender,
             @RequestParam(name="age") Integer age,
-            @RequestParam(name="password") String password
+            @RequestParam(name="password") String password,
+            @RequestParam(name="email",required = false) String email
             ) throws BusinessException, UnsupportedEncodingException, NoSuchAlgorithmException {
         // 验证手机号和对应OTPCode是否相符合
         String sessionOtpCode = (String) this.httpServletRequest.getSession().getAttribute(telphone);
@@ -96,6 +106,7 @@ public class UserController extends BaseController{
         userModel.setGender(gender);
         userModel.setTelphone(telphone);
         userModel.setRegisterMode("byphone");
+        userModel.setEmail(email);
         // 密码从明文到密文
         userModel.setEncrptPassword(encodeByMD5(password));
         //传入数据库
@@ -124,9 +135,26 @@ public class UserController extends BaseController{
         // 加入session内
         this.httpServletRequest.getSession().setAttribute("IS_LOGIN",true);
         this.httpServletRequest.getSession().setAttribute("LOGIN_USER",userModel);
-
+        // 加入redis缓存中
+        redisTemplate.opsForValue().set(this.httpServletRequest.getSession().getId(),true,3, TimeUnit.MINUTES);
         return CommonReturnType.create(null);
     }
+
+    @PostMapping(value = "/logout",consumes = {CONTENT_TYPE_FORMED})
+    @ResponseBody
+    public CommonReturnType logout() throws BusinessException {
+        UserModel user = (UserModel) this.httpServletRequest.getSession().getAttribute("LOGIN_USER");
+        if(user == null){
+            throw new BusinessException(USER_LOGIN_FAIL);
+        }
+        this.httpServletRequest.getSession().setAttribute("IS_LOGIN",false);
+        this.httpServletRequest.getSession().setAttribute("LOGIN_USER",null);
+        // 添加cookieID
+        Cookie cookie = new Cookie("sessionId",(String) this.httpServletRequest.getSession().getId());
+        this.httpServletResponse.addCookie(cookie);
+        return CommonReturnType.create(null);
+    }
+
 
     // 将UserModel转为用户展示的UserViewObject
     private UserVO convertUserVOfromUserModel(UserModel userModel){
